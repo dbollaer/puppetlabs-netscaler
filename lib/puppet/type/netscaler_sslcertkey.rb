@@ -60,7 +60,7 @@ Puppet::Type.newtype(:netscaler_sslcertkey) do
     desc "Name of the Certificate Authority certificate-key pair to which to link a certificate-key pair."
   end
 
-  newproperty(:nodomaincheck, :parent => Puppet::Property::NetscalerTruthy) do
+  newproperty(:nodomain_check, :parent => Puppet::Property::NetscalerTruthy) do
     truthy_property("Override the check for matching domain names during a certificate update operation.", "true", "false")
   end
 end
