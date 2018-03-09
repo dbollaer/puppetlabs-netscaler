@@ -48,7 +48,7 @@ Puppet::Type.newtype(:netscaler_sslcertkey) do
     truthy_property("Issue an alert when the certificate is about to expire.", "ENABLED", "DISABLED")
   end
 
-  newproperty(:notificationperiod) do
+  newproperty(:notification_period) do
     desc "Time, in number of days, before certificate expiration, at which to generate an alert that the certificate is about to expire."
   end
 
