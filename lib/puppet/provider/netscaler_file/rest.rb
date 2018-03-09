@@ -7,24 +7,33 @@ Puppet::Type.type(:netscaler_file).provide(:rest, {:parent => Puppet::Provider::
     "systemfile"
   end
 
-  def self.instances
+  def self.recursive_instances(dir='')
     instances = []
     #look for files at a certain location
-    files = Puppet::Provider::Netscaler.call('/config/systemfile',{'args'=>"filelocation:%2Fnsconfig%2F"})
+    location=dir.gsub(/\//, '%2F')
+    files = Puppet::Provider::Netscaler.call('/config/systemfile',{'args'=>"filelocation:%2Fnsconfig%2F#{location}"})
     return [] if files.nil?
 
+
     files.each do |file|
-      file_contents = Puppet::Provider::Netscaler.call("/config/systemfile", {'args'=>"filelocation:%2Fnsconfig%2F,filename:#{file['filename']}"}) || [] 
-      file_contents.each do |file_content|
-        instances << new({
-          :ensure   => :present,
-          :name     => file_content['filename'],
-          :encoding => file_content['fileencoding'],
-        })
+      if file['filemode'] && file['filemode'][0] == 'DIRECTORY'
+        instances += recursive_instances("#{file['filename']}/")
+      else
+        file_contents = Puppet::Provider::Netscaler.call("/config/systemfile", {'args'=>"filelocation:%2Fnsconfig%2F#{location},filename:#{file['filename']}"}) || []
+        file_contents.each do |file_content|
+          instances << new({
+            :ensure   => :present,
+            :name     => "#{dir}#{file_content['filename']}",
+            :encoding => file_content['fileencoding'],
+          })
+        end
       end
     end
 
     instances
+  end
+  def self.instances
+    recursive_instances('')
   end
 
   mk_resource_methods
@@ -44,14 +53,30 @@ Puppet::Type.type(:netscaler_file).provide(:rest, {:parent => Puppet::Provider::
     ]
   end
 
+  def flush
+    if @property_hash and ! @property_hash.empty?
+      path = @property_hash[:name]
+      filename = File.basename(path)
+      path = "/nsconfig/#{File.dirname(path)}".gsub(/\//, '%2F')
+      Puppet::Provider::Netscaler.delete("/config/#{netscaler_api_type}/#{filename}", {'args'=>"filelocation:#{path}"})
+      result = create()
+    end
+    return result
+  end
+
   def destroy
-    result = Puppet::Provider::Netscaler.delete("/config/#{netscaler_api_type}/#{resource.name}", {'args'=>"filelocation:%2Fnsconfig%2F"})
+    path = @property_hash[:name]
+    filename = File.basename(path)
+    path = "/nsconfig/#{File.dirname(path)}".gsub(/\//, '%2F')
+    result = Puppet::Provider::Netscaler.delete("/config/#{netscaler_api_type}/#{filename}", {'args'=>"filelocation:#{path}"})
     @property_hash.clear
     return result
   end
 
   def per_provider_munge(message)
-    message[:filelocation] = '/nsconfig/'
+    path = message[:name]
+    message[:name] = File.basename(path)
+    message[:filelocation] = "/nsconfig/#{File.dirname(path)}"
     message[:content] =  Base64.strict_encode64(message[:content])
     message
   end
