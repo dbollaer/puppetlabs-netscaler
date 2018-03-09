@@ -21,10 +21,13 @@ Puppet::Type.type(:netscaler_file).provide(:rest, {:parent => Puppet::Provider::
       else
         file_contents = Puppet::Provider::Netscaler.call("/config/systemfile", {'args'=>"filelocation:%2Fnsconfig%2F#{location},filename:#{file['filename']}"}) || []
         file_contents.each do |file_content|
+          content = nil
+          content = Base64.decode64(file_content['filecontent']) if file_content['filecontent']
           instances << new({
             :ensure   => :present,
             :name     => "#{dir}#{file_content['filename']}",
             :encoding => file_content['fileencoding'],
+            :content  => content,
           })
         end
       end
