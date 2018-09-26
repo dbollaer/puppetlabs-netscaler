@@ -41,6 +41,18 @@ Puppet::Type.newtype(:netscaler_servicegroup_member) do
 
   newproperty(:server_id) do
     desc "The identifier for the service. This is used when the persistency type is set to Custom Server ID."
+    munge do |value|
+      Integer(value)
+    end
+  end
+
+  newproperty(:hash_id) do
+    desc "The hash identifier for the service. This must be unique for each service. This parameter is used by hash based load balancing methods.
+    Min = 1"
+    newvalues(/^\d+$/)
+    munge do |value|
+      Integer(value)
+    end
   end
 
 end
