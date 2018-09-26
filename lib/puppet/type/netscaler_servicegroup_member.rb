@@ -39,4 +39,8 @@ Puppet::Type.newtype(:netscaler_servicegroup_member) do
     desc "The identifier for this IP:Port pair. Used when the persistency type is set to Custom Server ID.<br>Default value: 'None'."
   end
 
+  newproperty(:server_id) do
+    desc "The identifier for the service. This is used when the persistency type is set to Custom Server ID."
+  end
+
 end
