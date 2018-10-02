@@ -370,8 +370,14 @@ Minimum length = 1"
     system_resources = []
 
     # gather a list of all relevant bindings present on the system
-    system_resources += Puppet::Type.type(:netscaler_csvserver_rewritepolicy_bind).instances
-    system_resources += Puppet::Type.type(:netscaler_csvserver_responderpolicy_bind).instances
+    rewrite_policies = Puppet::Type.type(:netscaler_csvserver_rewritepolicy_bind)
+    if rewrite_policies != nil
+      system_resources += rewrite_policies.instances
+    end
+    responder_policies = Puppet::Type.type(:netscaler_csvserver_responderpolicy_bind)
+    if responder_policies != nil
+      system_resources += responder_policies.instances
+    end
 
     # Reject all resources that are in the catalog
     system_resources.delete_if { |res| catalog.resource_refs.include? res.ref }
