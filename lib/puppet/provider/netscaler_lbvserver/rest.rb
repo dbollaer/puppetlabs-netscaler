@@ -155,6 +155,7 @@ Puppet::Type.type(:netscaler_lbvserver).provide(:rest, {:parent => Puppet::Provi
   end
 
   def per_provider_munge(message)
+    message.delete(:purge_bindings)
     message
   end
 

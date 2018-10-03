@@ -8,6 +8,8 @@ Puppet::Type.newtype(:netscaler_lbvserver) do
   apply_to_device
   ensurable
 
+  newparam(:purge_bindings)
+
   newparam(:name, :parent => Puppet::Parameter::NetscalerName, :namevar => true)
 
   newproperty(:service_type) do
@@ -682,4 +684,46 @@ Puppet::Type.newtype(:netscaler_lbvserver) do
   newproperty(:process_local, :parent => Puppet::Property::NetscalerTruthy) do
     truthy_property("By turning on this option packets destined to a vserver in a cluster will not under go any steering. Turn this option for single packet request response mode or when the upstream device is performing a proper RSS for connection based distribution.", 'ENABLED', 'DISABLED')
   end
+
+  def per_provider_munge(message)
+    message.delete(:purge_bindings)
+    message
+  end
+
+  def generate
+    return [] unless value(:purge_bindings) == true
+
+    system_resources = []
+
+    # gather a list of all relevant bindings present on the system
+    rewrite_policies = Puppet::Type.type(:netscaler_lbvserver_rewritepolicy_binding)
+    if rewrite_policies != nil
+      system_resources += rewrite_policies.instances
+    end
+    responder_policies = Puppet::Type.type(:netscaler_lbvserver_responderpolicy_binding)
+    if responder_policies != nil
+      system_resources += responder_policies.instances
+    end
+    service_binding = Puppet::Type.type(:netscaler_lbvserver_service_binding)
+    if service_binding != nil
+      system_resources += service_binding.instances
+    end
+
+    service_group_binding = Puppet::Type.type(:netscaler_lbvserver_service_group_binding)
+    if service_group_binding != nil
+      system_resources += service_group_binding.instances
+    end
+
+    # Reject all resources that are in the catalog
+    system_resources.delete_if { |res| catalog.resource_refs.include? res.ref }
+
+    # Keep only our own bindings
+    system_resources.delete_if { |res| (res[:name].split('/')[0] != value(:name)) }
+
+    # We mark all remaining resources for deletion
+    system_resources.each {|res| res[:ensure] = :absent}
+
+    system_resources
+  end
+
 end
