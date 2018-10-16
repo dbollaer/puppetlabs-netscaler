@@ -8,9 +8,11 @@ Puppet::Type.newtype(:netscaler_lbvserver) do
   apply_to_device
   ensurable
 
-  newparam(:purge_bindings)
 
   newparam(:name, :parent => Puppet::Parameter::NetscalerName, :namevar => true)
+
+  newparam(:purge_bindings)
+
 
   newproperty(:service_type) do
   desc "Protocol used by the service (also called the service type). Valid options: HTTP, FTP, TCP, UDP, SSL, SSL_BRIDGE, SSL_TCP, DTLS, NNTP, DNS, DHCPRA, ANY, SIP_UDP, DNS_TCP, RTSP, PUSH, SSL_PUSH, RADIUS, RDP, MYSQL, MSSQL, DIAMETER, SSL_DIAMETER, TFTP, ORACLE."
@@ -20,7 +22,6 @@ Puppet::Type.newtype(:netscaler_lbvserver) do
         fail ArgumentError, "Valid options: HTTP, FTP, TCP, UDP, SSL, SSL_BRIDGE, SSL_TCP, DTLS, NNTP, DNS, DHCPRA, ANY, SIP_UDP, DNS_TCP, RTSP, PUSH, SSL_PUSH, RADIUS, RDP, MYSQL, MSSQL, DIAMETER, SSL_DIAMETER, TFTP, ORACLE"
       end
     end
-
     munge(&:upcase)
   end
 
@@ -40,10 +41,6 @@ Puppet::Type.newtype(:netscaler_lbvserver) do
 
   newproperty(:port) do
     desc "Port number for the virtual server."
-
-    munge do |value|
-      Integer(value)
-    end
   end
 
   newproperty(:range) do
@@ -685,10 +682,6 @@ Puppet::Type.newtype(:netscaler_lbvserver) do
     truthy_property("By turning on this option packets destined to a vserver in a cluster will not under go any steering. Turn this option for single packet request response mode or when the upstream device is performing a proper RSS for connection based distribution.", 'ENABLED', 'DISABLED')
   end
 
-  def per_provider_munge(message)
-    message.delete(:purge_bindings)
-    message
-  end
 
   def generate
     return [] unless value(:purge_bindings) == true
