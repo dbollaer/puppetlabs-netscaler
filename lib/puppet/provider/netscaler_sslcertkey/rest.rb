@@ -61,12 +61,42 @@ Puppet::Type.type(:netscaler_sslcertkey).provide(:rest, {:parent => Puppet::Prov
       :certificate_format,
       :passplain,
       :bundle,
-      :linkcert_keyname,
       :nodomain_check,
     ]
   end
 
   def per_provider_munge(message)
+    if message[:linkcert_keyname]
+      message.delete(:linkcert_keyname)
+    end
+    message
+  end
+
+  def create
+    @create_elements = true
+    result = super
+    if (result.status == 200 or result.status == 201) and resource[:linkcert_keyname]
+      binding_property_hash = {:certkey => resource[:name], :linkcertkeyname => resource[:linkcert_keyname] }
+      result = Puppet::Provider::Netscaler.post("/config/#{netscaler_api_type}", message_custom(binding_property_hash, "sslcertkey"), {"action" => "link"})
+    end
+    @property_hash.clear
+    return result
+  end
+
+  def destroy
+    if (resource[:linkcert_keyname])
+      binding_property_hash = {:certkey => resource[:name]}
+      Puppet::Provider::Netscaler.post("/config/#{netscaler_api_type}", message_custom(binding_property_hash, "sslcertkey"), {"action" => "unlink"})
+    end
+    result = super
+    @property_hash.clear
+    return result
+  end
+
+  def message_custom(object, api_type)
+    message = object.clone.to_hash
+    message = { api_type => message }
+    message = message.to_json
     message
   end
 end
